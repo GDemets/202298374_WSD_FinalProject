@@ -137,3 +137,11 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Dataabase files
+instance/
+*.db
+*.sqlite3
+*.pyc
+__pycache__/
+.env
