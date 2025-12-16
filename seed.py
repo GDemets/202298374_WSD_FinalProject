@@ -1,5 +1,5 @@
 from app import app
-from models import db, User, Post, Comment, Category
+from models import db, User, Post, Comment, Category, Favorite
 from faker import Faker
 import random
 
@@ -69,6 +69,23 @@ with app.app_context():
         comments.append(comment)
 
     db.session.add_all(comments)
+    db.session.commit()
+
+    favorites = []
+    for user in users:
+        favorite_posts = random.sample(
+            posts,
+            k=random.randint(0, 10)
+        )
+        for post in favorite_posts:
+            favorites.append(
+                Favorite(
+                    user_id=user.id,
+                    post_id=post.id
+                )
+            )
+
+    db.session.add_all(favorites)
     db.session.commit()
 
     print("Database seeded successfully!")

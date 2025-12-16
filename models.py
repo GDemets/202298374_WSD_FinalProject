@@ -86,7 +86,7 @@ class Category(db.Model):
             "posts": [post.id for post in self.posts]
         }
 
-class Favorites(db.Model):
+class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
