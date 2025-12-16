@@ -1,15 +1,14 @@
 from flask import Flask, request, jsonify, abort, render_template
 from flasgger import Swagger
-from models import db, User, Review, Book, Category, Wishlist
+from models import db, User, Post, Comment, Category
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token,jwt_required, get_jwt_identity, get_jwt
 from datetime import datetime
 from dotenv import load_dotenv
 from datetime import timedelta, datetime
 from error_response import error_response
-from routes.user_routes import register_user_routes
+from routes.user import users_routes
 import logging
 import os
-
 
 load_dotenv()
 app = Flask(__name__)
@@ -21,7 +20,7 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)
 swagger = Swagger(app, template={
     "swagger": "2.0",
     "info": {
-        "title": "BookStore API",
+        "title": "Blog API",
         "description": "API documentation",
     },
     "securityDefinitions": {
@@ -37,6 +36,7 @@ swagger = Swagger(app, template={
 db.init_app(app)
 jwt = JWTManager(app)
 
+users_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True)
