@@ -10,7 +10,7 @@ class User(db.Model):
     pseudo = db.Column(db.String(30), unique=True, nullable=False)
     mail = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), default="USER", nullable=False)
+    role = db.Column(db.String(20), default="user", nullable=False)
 
     posts = db.relationship("Post", backref="author", lazy=True)
     comments = db.relationship("Comment", backref="user", lazy=True)

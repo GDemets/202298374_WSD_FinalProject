@@ -26,7 +26,8 @@ def comment_routes(app):
         """
         current_user_id = get_jwt_identity()
         if current_user_id is None:
-            return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
+            return error_response(status=401,code="UNAUTHORIZED",message="Authentication required")
+        current_user_id = int(current_user_id)
 
         comments = Comment.query.filter_by(user_id=current_user_id).all()
         return jsonify({
@@ -113,6 +114,7 @@ def comment_routes(app):
         current_user_id = get_jwt_identity()
         if current_user_id is None:
             return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
+        current_user_id=int(current_user_id)
 
         if not request.json or 'content' not in request.json:
             return error_response(status=400,code='INVALID_QUERY_PARAM',message='Content is required')
@@ -120,7 +122,7 @@ def comment_routes(app):
         post = Post.query.get(post_id)
         if not post:
             return error_response(status=404,code='RESSOURCE_NOT_FOUND',message='Post ID does not exist')
-
+        
         comment = Comment(
             content=request.json['content'],
             user_id=current_user_id,
@@ -180,21 +182,23 @@ def comment_routes(app):
           500:
             description: Internal servor error
         """
+        claims = get_jwt()
         current_user_id = get_jwt_identity()
+        role = claims.get("role")
+        comment = Comment.query.get(comment_id)
+
         if current_user_id is None:
             return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
-        claims = get_jwt()
-        if claims.get("role") != "admin":
-            return error_response(status=403,code='FORBIDDEN',message='No access')
+        current_user_id=int(current_user_id)
 
         comment = Comment.query.get(comment_id)
         if not comment:
             return error_response(status=404,code='RESSOURCE_NOT_FOUND',message='Comment ID does not exist')
-        if claims.get("role") != "admin" and comment.user_id != current_user_id:
-            return error_response(status=403,code='FORBIDDEN',message='You are not allowed to update this comment')
+        if comment.user_id != current_user_id:
+            return error_response(status=403,code='FORBIDDEN',message='You are not allowed to delete this comment')
         if not request.json or 'content' not in request.json:
             return error_response(status=400,code='INVALID_QUERY_PARAM',message='Content is required')
-
+        
         try:
             comment.content = request.json['content']
             db.session.commit()
@@ -230,34 +234,34 @@ def comment_routes(app):
           400:
             description: Invalid JSON
           403:
-            description: Unauthorized to updated this comment
+            description: Unauthorized to deleted this comment
           404:
             description: Post not found
           500:
             description: Internal servor error
-        """
-        claims = get_jwt()
+        """       
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
         role = claims.get("role")
-        comment = Comment.query.get(comment_id)
 
         if current_user_id is None:
-            return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
+            return error_response(status=401,code='UNAUTHORIZED',message='Authentication required')
+        
+        current_user_id=int(current_user_id)
+
+        comment = Comment.query.get(comment_id)
         if not comment:
-            return error_response(status=404,code='RESSOURCE_NOT_FOUND',message='Comment ID does not exist')
+            return error_response(status=404,code='RESSOURCE_NOT_FOUND',message='Post ID does not exist')
+        
         if role != "admin" and comment.user_id != current_user_id:
-            return error_response(status=403,code='FORBIDDEN',message='You are not allowed to delete this comment')
+            return error_response(status=403,code='FORBIDDEN',message='You are not allowed to delete this post')
 
         try:
             db.session.delete(comment)
             db.session.commit()
         except Exception as e:
             print(e)
-            return error_response(
-                status=500,
-                code='INTERNAL_SERVER_ERROR',
-                message='Internal server error'
-            )
+            return error_response(status=500,code='INTERNAL_SERVER_ERROR',message='Internal server error')
 
         return jsonify({
             'status': 'success',

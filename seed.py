@@ -19,6 +19,8 @@ with app.app_context():
     u1.set_password("1234")
     users.append(u1)
 
+    
+
     for _ in range(30):
         user = User(
             pseudo=fake.user_name(),
@@ -48,6 +50,14 @@ with app.app_context():
     db.session.commit()
 
     posts = []
+
+    post1 = Post(
+        title=fake.sentence(nb_words=6),
+        content=fake.text(max_nb_chars=500),
+        user_id=u1.id,
+        category_id=random.choice(categories).id
+    )
+    posts.append(post1)
     for _ in range(100):
         post = Post(
             title=fake.sentence(nb_words=6),

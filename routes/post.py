@@ -280,16 +280,16 @@ def posts_routes(app):
             description: Posts correctly posted
           400: 
             description: Missing required fields or format invaid
-          403:
+          401:
             description: Missing token no access
           500:
             description: Internal server error
         """
-        claims = get_jwt()
-        if claims.get("role") != "admin":
-            return error_response(status=403, code='FORBIDDEN', message='No access')
+        current_user_id = get_jwt_identity()
+        if current_user_id is None:
+          return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
 
-        required_fields = ['title', 'content', 'category_id', 'user_id']
+        required_fields = ['title', 'content', 'category_id']
 
         if not request.json:
             return error_response(status=400, code='BAD_REQUEST', message='Invalid JSON')
@@ -300,7 +300,7 @@ def posts_routes(app):
             title=request.json['title'],
             content=request.json['content'],
             category_id=request.json['category_id'],
-            user_id=request.json['user_id']
+            user_id=current_user_id
         )
 
         try:
@@ -323,6 +323,10 @@ def posts_routes(app):
         security:
           - BearerAuth: []
         parameters:
+          - name: post_id
+            in: path
+            required: true
+            type: integer
           - in: body
             name: body
             required: true
@@ -351,45 +355,29 @@ def posts_routes(app):
           404:
             description: Post does not exist
         """
-        claims = get_jwt()
-        current_user_id = claims.get("id")
-        role = claims.get("role")
+        current_user_id = int(get_jwt_identity())
+        if current_user_id is None:
+            return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
 
         post = Post.query.get(post_id)
         if not post:
-            return error_response(
-                status=404,
-                code='RESSOURCE_NOT_FOUND',
-                message='Post ID does not exist'
-            )
+            return error_response(status=404,code='RESSOURCE_NOT_FOUND',message='Post ID does not exist')
         
-        if role != "admin" and post.user_id != current_user_id:
-            return error_response(
-                status=403,
-                code='FORBIDDEN',
-                message='You are not allowed to modify this post'
-            )
+        if post.user_id != current_user_id:
+          print("cvbn",post.user_id,current_user_id)
+          return error_response(status=403,code='FORBIDDEN',message='You are not allowed to modify this post')
 
         if not request.json:
-            return error_response(
-                status=400,
-                code='BAD_REQUEST',
-                message='Invalid JSON'
-            )
+            return error_response(status=400,code='BAD_REQUEST',message='Invalid JSON')
 
         try:
             post.title = request.json.get('title', post.title)
             post.content = request.json.get('content', post.content)
             post.category_id = request.json.get('category_id', post.category_id)
-
             db.session.commit()
         except Exception as e:
             print(e)
-            return error_response(
-                status=500,
-                code='INTERNAL_SERVER_ERROR',
-                message='Internal server error'
-            )
+            return error_response(status=500,code='INTERNAL_SERVER_ERROR',message='Internal server error')
 
         return jsonify({
             'status': 'success',
@@ -423,19 +411,30 @@ def posts_routes(app):
           404:
             description: Post does not exist
         """
+        current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims.get("role") != "admin":
-            return error_response(status=403, code='FORBIDDEN', message='No access')
+        role = claims.get("role")
+
+        if current_user_id is None:
+            return error_response(status=401,code='UNAUTHORIZED',message='Authentication required')
+        
+        current_user_id=int(current_user_id)
 
         post = Post.query.get(post_id)
         if not post:
-            return error_response(status=404, code='RESSOURCE_NOT_FOUND', message='Post ID does not exist')
+            return error_response(status=404,code='RESSOURCE_NOT_FOUND',message='Post ID does not exist')
+        
+        if role != "admin" and post.user_id != current_user_id:
+            return error_response(status=403,code='FORBIDDEN',message='You are not allowed to delete this post')
 
         try:
             db.session.delete(post)
             db.session.commit()
         except Exception as e:
             print(e)
-            return error_response(status=500, code='INTERNAL_SERVER_ERROR', message='Internal server error')
+            return error_response(status=500,code='INTERNAL_SERVER_ERROR',message='Internal server error')
 
-        return jsonify({'status': 'success','message': 'Post successfully deleted'}), 200
+        return jsonify({
+            'status': 'success',
+            'message': 'Post successfully deleted'
+        }), 200
