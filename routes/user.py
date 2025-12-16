@@ -296,15 +296,19 @@ def users_routes(app):
             description: User not found
         """
         current_user_id = get_jwt_identity()
-        if current_user_id is None:
-            return error_response(status=401,code='UNAUTHORIZED',message='No authentication token or invalid token')
-        
+        current_user_id = int(current_user_id)
+        user = User.query.get(current_user_id)
+        if not user:
+            return error_response(status=404,code="USER_NOT_FOUND",message="User does not exist")
+
         try:
-            user = User.query.get(current_user_id)
             db.session.delete(user)
             db.session.commit()
         except Exception as e:
             print(e)
-            return error_response(status=404,code='USER_NOT_FOUND',message='User ID does not exist')
+            return error_response(status=500,code="INTERNAL_SERVER_ERROR",message="Internal server error")
 
-        return jsonify({'status': 'success', 'message': 'User successfully deleted'}), 200
+        return jsonify({
+            "status": "success",
+            "message": "User successfully deleted"
+        }), 200

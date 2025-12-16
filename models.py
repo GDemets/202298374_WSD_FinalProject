@@ -12,8 +12,9 @@ class User(db.Model):
     password_hash = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), default="user", nullable=False)
 
-    posts = db.relationship("Post", backref="author", lazy=True)
-    comments = db.relationship("Comment", backref="user", lazy=True)
+    posts = db.relationship("Post",backref="author",cascade="all, delete-orphan",lazy=True)
+    comments = db.relationship("Comment",backref="user",cascade="all, delete-orphan",lazy=True)
+    favorites = db.relationship("Favorite",backref="user",cascade="all, delete-orphan",lazy=True)
 
     def to_dict(self):
         return {
@@ -38,12 +39,8 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=False)
 
-    comments = db.relationship(
-        "Comment",
-        backref="post",
-        lazy=True,
-        cascade="all, delete-orphan"
-    )
+    comments = db.relationship("Comment",backref="post",cascade="all, delete-orphan",lazy=True)
+    favorites = db.relationship("Favorite",backref="post",cascade="all, delete-orphan",lazy=True)
 
     def to_dict(self):
         return {
