@@ -10,6 +10,7 @@ from routes.user import users_routes
 from routes.login import login_routes
 from routes.post import posts_routes
 from routes.category import category_routes
+from routes.comment import comment_routes
 import logging
 import os
 
@@ -43,6 +44,7 @@ users_routes(app)
 login_routes(app)
 posts_routes(app)
 category_routes(app)
+comment_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True)

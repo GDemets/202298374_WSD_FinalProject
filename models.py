@@ -85,3 +85,15 @@ class Category(db.Model):
             "name": self.name,
             "posts": [post.id for post in self.posts]
         }
+
+class Favorites(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "post_id": self.post_id
+        }
