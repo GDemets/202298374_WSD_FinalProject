@@ -9,13 +9,13 @@ from flask_jwt_extended import create_access_token
 @pytest.fixture
 def app():
     flask_app.config.update({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "JWT_SECRET_KEY": "test-secret-key",
-        "SECRET_KEY": "test-secret-key",
-        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:', 
+        'JWT_SECRET_KEY': 'test-secret-key',
+        'SECRET_KEY': 'test-secret-key',
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
     })
-
+    
     with flask_app.app_context():
         db.create_all()
         yield flask_app
@@ -24,10 +24,12 @@ def app():
 
 @pytest.fixture
 def client(app):
+    """Create Flask client for test"""
     return app.test_client()
 
 @pytest.fixture
 def runner(app):
+    """Run cli runner"""
     return app.test_cli_runner()
 
 @pytest.fixture

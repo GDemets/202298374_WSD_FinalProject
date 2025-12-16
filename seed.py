@@ -19,8 +19,6 @@ with app.app_context():
     u1.set_password("1234")
     users.append(u1)
 
-    
-
     for _ in range(30):
         user = User(
             pseudo=fake.user_name(),

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flasgger import Swagger
 from models import db
 from flask_jwt_extended import JWTManager
@@ -11,8 +11,12 @@ from routes.category import category_routes
 from routes.comment import comment_routes
 from routes.favorite import favorite_routes
 
+from datetime import datetime
+
+import logging
 import os
 
+### Flask App and Database Configuration ###
 load_dotenv()
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URI")
@@ -20,6 +24,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("FLASK_SECRET_KEY")
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)
+
+db.init_app(app)
+jwt = JWTManager(app)
 swagger = Swagger(app, template={
     "swagger": "2.0",
     "info": {
@@ -36,8 +43,33 @@ swagger = Swagger(app, template={
     }
 })
 
-db.init_app(app)
-jwt = JWTManager(app)
+def create_tables():
+    db.create_all()
+
+@app.before_request
+def ensure_tables_exist():
+    if not app.config.get("TESTING", False):
+        create_tables()
+        
+### Middleware to log requests ###
+@app.before_request
+def log_request_info():
+    logging.info(f"{datetime.now().isoformat()} - {request.method} {request.path}")
+
+### Routes ###
+@app.route('/health', methods=['GET'])
+def health_check():
+    response_data = {
+      "status": "UP",
+      "service": "Bookstore-api",
+      "timestamp": datetime.now().isoformat(),
+    }
+    return jsonify(response_data), 200
+
+@app.route('/')
+def index():
+    from flask import redirect
+    return redirect('/apidocs/')
 
 users_routes(app)
 login_routes(app)
