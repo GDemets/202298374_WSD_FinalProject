@@ -9,6 +9,7 @@ from error_response import error_response
 from routes.user import users_routes
 from routes.login import login_routes
 from routes.post import posts_routes
+from routes.category import category_routes
 import logging
 import os
 
@@ -41,6 +42,7 @@ jwt = JWTManager(app)
 users_routes(app)
 login_routes(app)
 posts_routes(app)
+category_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True)
