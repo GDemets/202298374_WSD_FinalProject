@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from datetime import timedelta, datetime
 from error_response import error_response
 from routes.user import users_routes
+from routes.login import login_routes
 import logging
 import os
 
@@ -37,6 +38,7 @@ db.init_app(app)
 jwt = JWTManager(app)
 
 users_routes(app)
+login_routes(app)
 
 if __name__ == "__main__":
     app.run(debug=True)
