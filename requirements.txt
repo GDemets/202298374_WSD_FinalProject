@@ -1,0 +1,11 @@
+Flask
+flasgger
+Flask-JWT-Extended
+python-dotenv
+Flask-Caching
+Flask-SQLAlchemy
+Flask-Bcrypt
+Faker
+requests
+google-auth
+google-auth-oauthlib

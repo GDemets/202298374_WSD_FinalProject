@@ -1,13 +1,10 @@
 from flask import request, jsonify, redirect
-from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token,jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import create_access_token, create_refresh_token,jwt_required, get_jwt_identity
 from error_response import error_response
 from models import User, db
-from dto.user_dto import UserCreateDTO, UserUpdateDTO
-from marshmallow import ValidationError
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from dotenv import load_dotenv
-from firebase_admin import auth
 
 import urllib.parse
 import requests

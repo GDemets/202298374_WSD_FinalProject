@@ -1,9 +1,7 @@
 from flask import request, jsonify
-from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token,jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt
 from error_response import error_response
 from models import Category, db
-from dto.user_dto import UserCreateDTO, UserUpdateDTO
-from marshmallow import ValidationError
 
 def category_routes(app):
 
