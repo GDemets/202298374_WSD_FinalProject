@@ -150,12 +150,9 @@ def login_routes(app):
         r = requests.post(token_url, data=data)
         token_response = r.json()
 
-        # Récupération du id_token pour l'API POST
         id_token_value = token_response.get("id_token")
         if not id_token_value:
             return jsonify({"error": "Failed to obtain id_token"}), 400
-
-        # Vérifie le token et crée l'utilisateur comme dans ton POST
         try:
             idinfo = id_token.verify_oauth2_token(
                 id_token_value,
@@ -194,87 +191,3 @@ def login_routes(app):
             "id_token": id_token_value,
             "message": "Login with Google successful"
         }), 200
-        
-    @app.route('/login/firebase', methods=['POST'])
-    def login_firebase():
-        """
-        Login with Firebase (Google, Facebook, Apple...)
-        ---
-        tags:
-          - Authentification
-        consumes:
-          - application/json
-        parameters:
-          - in: body
-            name: body
-            required: true
-            schema:
-              type: object
-              properties:
-                idToken:
-                  type: string
-                  example: "eyJhbGciOiJSUzI1NiIs..."
-              required:
-                - idToken
-        responses:
-            200:
-                description: User successfully connected with Firebase
-            400:
-                description: Invalid request
-            401:
-                description: Invalid Firebase token
-        """
-        data = request.get_json()
-        if not data or "idToken" not in data:
-            return error_response(
-                status=400,
-                code="INVALID_QUERY_PARAM",
-                message="idToken is required"
-            )
-
-        try:
-            # 🔐 Vérification du token Firebase
-            decoded_token = auth.verify_id_token(data["idToken"])
-
-            firebase_uid = decoded_token["uid"]
-            email = decoded_token.get("email")
-            name = decoded_token.get("name", "")
-
-        except Exception:
-            return error_response(
-                status=401,
-                code="INVALID_FIREBASE_TOKEN",
-                message="Invalid Firebase token"
-            )
-
-        # 🔍 Vérifier si user existe
-        user = User.query.filter_by(mail=email).first()
-
-        if not user:
-            pseudo = email.split("@")[0] if email else f"user_{firebase_uid[:6]}"
-
-            user = User(
-                pseudo=pseudo,
-                mail=email,
-                role="user",
-                password_hash="firebase_auth"
-            )
-            db.session.add(user)
-            db.session.commit()
-
-        # 🔑 Générer TES tokens JWT
-        access_token = create_access_token(
-            identity=str(user.id),
-            additional_claims={"role": user.role}
-        )
-
-        refresh_token = create_refresh_token(identity=str(user.id))
-
-        return jsonify({
-            "status": "success",
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "message": "Login with Firebase successful"
-        }), 200
-
-
