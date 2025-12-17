@@ -4,6 +4,13 @@ from error_response import error_response
 from models import User, db
 from dto.user_dto import UserCreateDTO, UserUpdateDTO
 from marshmallow import ValidationError
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from dotenv import load_dotenv
+
+
+import os
+load_dotenv()
 
 def login_routes(app):
 
@@ -99,3 +106,89 @@ def login_routes(app):
             "access_token": new_access_token,
             "message": "Access token successfully refreshed"
         }), 200
+    
+  
+
+    @app.route('/login/google', methods=['POST'])
+    def login_google():
+        """
+        Login with Google
+        ---
+        tags:
+          - Authentification
+        consumes:
+          - application/json
+        parameters:
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: object
+              properties:
+                id_token:
+                  type: string
+                  example: "eyJhbGciOiJSUzI1NiIs..."
+              required:
+                - id_token
+        responses:
+            200:
+                description: User successfully connected with Google
+            400:
+                description: Invalid request
+            401:
+                description: Invalid Google token
+        """
+        data = request.get_json()
+        if not data or "id_token" not in data:
+            return error_response(status=400,code="INVALID_QUERY_PARAM",message="id_token is required")
+
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                data["id_token"],
+                google_requests.Request(),
+                audience=os.getenv("GOOGLE_CLIENT_ID")
+            )
+
+            email = idinfo.get("email")
+            email_verified = idinfo.get("email_verified")
+
+            if not email_verified:
+                return error_response(
+                    status=401,
+                    code="EMAIL_NOT_VERIFIED",
+                    message="Google email not verified"
+                )
+
+        except ValueError:
+            return error_response(
+                status=401,
+                code="INVALID_GOOGLE_TOKEN",
+                message="Invalid Google token"
+            )
+
+        user = User.query.filter_by(mail=email).first()
+        pseudo = email.split("@")[0]  
+
+        user = User(
+            pseudo=pseudo,
+            mail=email,
+            role="user",
+            password_hash="1234"
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        access_token = create_access_token(
+            identity=str(user.id),
+            additional_claims={"role": user.role}
+        )
+
+        refresh_token = create_refresh_token(identity=str(user.id))
+
+        return jsonify({
+            "status": "success",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "message": "Login with Google successful"
+        }), 200
+
