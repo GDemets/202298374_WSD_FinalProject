@@ -5,9 +5,12 @@ from error_response import error_response
 from dto.user_dto import UserCreateDTO, UserUpdateDTO
 from marshmallow import ValidationError
 
+from extensions import cache
+
 def posts_routes(app):
 
     ### GET POSTS ###
+    @cache.cached(timeout=60, query_string=True)
     @app.route('/posts', methods=['GET'])
     def get_posts():
         """
@@ -65,11 +68,7 @@ def posts_routes(app):
             }), 200
         except Exception as e:
             print(e)
-            return error_response(
-                status=500,
-                code='INTERNAL_SERVER_ERROR',
-                message='Internal server error'
-            )
+            return error_response(status=500,code='INTERNAL_SERVER_ERROR',message='Internal server error'            )
 
     @app.route('/posts/<int:post_id>', methods=['GET'])
     def get_post(post_id):
