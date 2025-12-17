@@ -145,3 +145,6 @@ instance/
 *.pyc
 __pycache__/
 .env
+
+# Firebase Admin SDK
+wsd-termproject-fa20d-firebase-adminsdk-fbsvc-295bb91beb.json
