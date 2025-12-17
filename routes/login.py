@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, redirect
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token,jwt_required, get_jwt_identity, get_jwt
 from error_response import error_response
 from models import User, db
@@ -7,9 +7,12 @@ from marshmallow import ValidationError
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from dotenv import load_dotenv
+from firebase_admin import auth
 
-
+import urllib.parse
+import requests
 import os
+
 load_dotenv()
 
 def login_routes(app):
@@ -107,12 +110,95 @@ def login_routes(app):
             "message": "Access token successfully refreshed"
         }), 200
     
-  
-
-    @app.route('/login/google', methods=['POST'])
-    def login_google():
+    @app.route("/login/google", methods=["GET"])
+    def login_google_redirect():
         """
-        Login with Google
+        Redirect user to Google OAuth login
+        ---
+        tags:
+          - Authentification
+        responses:
+          302:
+            description: Redirect to Google login page
+        """
+        params = {
+            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "redirect_uri": "http://localhost:5000/login/google/callback",
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "offline",
+            "prompt": "consent"
+        }
+        url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+        return redirect(url)
+
+    @app.route("/login/google/callback", methods=["GET"])
+    def login_google_callback():
+        code = request.args.get("code")
+        if not code:
+            return "Missing code", 400
+
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
+            "redirect_uri": "http://localhost:5000/login/google/callback",
+            "grant_type": "authorization_code"
+        }
+
+        r = requests.post(token_url, data=data)
+        token_response = r.json()
+
+        # Récupération du id_token pour l'API POST
+        id_token_value = token_response.get("id_token")
+        if not id_token_value:
+            return jsonify({"error": "Failed to obtain id_token"}), 400
+
+        # Vérifie le token et crée l'utilisateur comme dans ton POST
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                id_token_value,
+                google_requests.Request(),
+                audience=os.getenv("GOOGLE_CLIENT_ID")
+            )
+        except ValueError:
+            return error_response(401, "INVALID_GOOGLE_TOKEN", "Invalid Google token")
+
+        email = idinfo.get("email")
+        if not idinfo.get("email_verified"):
+            return error_response(401, "EMAIL_NOT_VERIFIED", "Google email not verified")
+
+        user = User.query.filter_by(mail=email).first()
+        if not user:
+            pseudo = email.split("@")[0]
+            user = User(
+                pseudo=pseudo,
+                mail=email,
+                role="user",
+                password_hash="1234" #
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        access_token = create_access_token(
+            identity=str(user.id),
+            additional_claims={"role": user.role}
+        )
+        refresh_token = create_refresh_token(identity=str(user.id))
+
+        return jsonify({
+            "status": "success",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "id_token": id_token_value,
+            "message": "Login with Google successful"
+        }), 200
+        
+    @app.route('/login/firebase', methods=['POST'])
+    def login_firebase():
+        """
+        Login with Firebase (Google, Facebook, Apple...)
         ---
         tags:
           - Authentification
@@ -125,59 +211,58 @@ def login_routes(app):
             schema:
               type: object
               properties:
-                id_token:
+                idToken:
                   type: string
                   example: "eyJhbGciOiJSUzI1NiIs..."
               required:
-                - id_token
+                - idToken
         responses:
             200:
-                description: User successfully connected with Google
+                description: User successfully connected with Firebase
             400:
                 description: Invalid request
             401:
-                description: Invalid Google token
+                description: Invalid Firebase token
         """
         data = request.get_json()
-        if not data or "id_token" not in data:
-            return error_response(status=400,code="INVALID_QUERY_PARAM",message="id_token is required")
+        if not data or "idToken" not in data:
+            return error_response(
+                status=400,
+                code="INVALID_QUERY_PARAM",
+                message="idToken is required"
+            )
 
         try:
-            idinfo = id_token.verify_oauth2_token(
-                data["id_token"],
-                google_requests.Request(),
-                audience=os.getenv("GOOGLE_CLIENT_ID")
-            )
+            # 🔐 Vérification du token Firebase
+            decoded_token = auth.verify_id_token(data["idToken"])
 
-            email = idinfo.get("email")
-            email_verified = idinfo.get("email_verified")
+            firebase_uid = decoded_token["uid"]
+            email = decoded_token.get("email")
+            name = decoded_token.get("name", "")
 
-            if not email_verified:
-                return error_response(
-                    status=401,
-                    code="EMAIL_NOT_VERIFIED",
-                    message="Google email not verified"
-                )
-
-        except ValueError:
+        except Exception:
             return error_response(
                 status=401,
-                code="INVALID_GOOGLE_TOKEN",
-                message="Invalid Google token"
+                code="INVALID_FIREBASE_TOKEN",
+                message="Invalid Firebase token"
             )
 
+        # 🔍 Vérifier si user existe
         user = User.query.filter_by(mail=email).first()
-        pseudo = email.split("@")[0]  
 
-        user = User(
-            pseudo=pseudo,
-            mail=email,
-            role="user",
-            password_hash="1234"
-        )
-        db.session.add(user)
-        db.session.commit()
+        if not user:
+            pseudo = email.split("@")[0] if email else f"user_{firebase_uid[:6]}"
 
+            user = User(
+                pseudo=pseudo,
+                mail=email,
+                role="user",
+                password_hash="firebase_auth"
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        # 🔑 Générer TES tokens JWT
         access_token = create_access_token(
             identity=str(user.id),
             additional_claims={"role": user.role}
@@ -189,6 +274,7 @@ def login_routes(app):
             "status": "success",
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "message": "Login with Google successful"
+            "message": "Login with Firebase successful"
         }), 200
+
 

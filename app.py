@@ -16,6 +16,13 @@ from datetime import datetime
 import logging
 import os
 
+import firebase_admin
+from firebase_admin import credentials
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate("wsd-termproject-fa20d-firebase-adminsdk-fbsvc-295bb91beb.json")
+    firebase_admin.initialize_app(cred)
+
 ### Flask App and Database Configuration ###
 load_dotenv()
 app = Flask(__name__)
