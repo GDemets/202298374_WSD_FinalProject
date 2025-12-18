@@ -32,6 +32,8 @@ Key Components
 - Flask-JWT-Extended
 - Flask-Caching
 - Swagger (Flasgger)
+- Google auth
+- Docker
 
 ## Installation
 
@@ -49,3 +51,18 @@ python app.py
 ```bash
 pytest -v
 ```
+
+### Swagger Documentation
+
+Swagger UI is available in localhost at:
+
+```
+http://127.0.0.1:3000/apidocs
+```
+
+Swagger UI is available with Jcloud and Docker at:
+```
+http://113.198.66.75:13216/apidocs//apidocs
+```
+
+---
