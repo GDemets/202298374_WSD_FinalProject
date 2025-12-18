@@ -1,6 +1,8 @@
 Flask
 flasgger
 Flask-JWT-Extended
+marshmallow
+marshmallow-sqlalchemy
 python-dotenv
 Flask-Caching
 Flask-SQLAlchemy
@@ -9,3 +11,4 @@ Faker
 requests
 google-auth
 google-auth-oauthlib
+gunicorn

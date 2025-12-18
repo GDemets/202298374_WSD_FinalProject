@@ -2,8 +2,6 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from models import Post,Category, db
 from error_response import error_response
-from dto.user_dto import UserCreateDTO, UserUpdateDTO
-from marshmallow import ValidationError
 
 from extensions import cache
 

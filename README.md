@@ -3,6 +3,28 @@
 # Blog API
 This project is a RESTful API built with Flask for managing users, posts, comments, categories, and favorites.
 
+Key Components
+
+- Flask Application
+- REST endpoints defined using Flask routes
+- Swagger documentation via Flasgger
+- Authentication & Security 
+- JWT managed by flask-jwt-extended 
+- Access token expiration: 15 minutes
+- Role-based access using JWT claims (Admin/user)
+- ORM: SQLAlchemy
+- Sensitive values stored in .env
+- Custom error responses via error_response
+
+## Data Models Overview
+
+* **User**: pseudo, email, password (hashed), role
+* **Post**: author, title, category, linked comments
+* **Category**: name, linked posts
+* **Comment**: post id, user id, content
+* **Favoritte**: user id, post id
+---
+
 ## Tech Stack
 - Python 3
 - Flask
