@@ -62,7 +62,7 @@ http://127.0.0.1:3000/apidocs
 
 Swagger UI is available with Jcloud and Docker at:
 ```
-http://113.198.66.75:13216/apidocs//apidocs
+http://113.198.66.75:13216/apidocs
 ```
 
 ---
