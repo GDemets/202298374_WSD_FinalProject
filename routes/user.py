@@ -37,7 +37,7 @@ def users_routes(app):
         }), 200
 
     @app.route('/users/me', methods=['GET'])
-    @jwt_required(optional=True)
+    @jwt_required()
     def get_me():
         """
         Get informations of a connected user.
@@ -45,7 +45,7 @@ def users_routes(app):
         tags:
             - Users
         security:
-            - BearerAuth []
+            - BearerAuth: []
         responses:
             200:
                 description: Users successfully retrieved.
@@ -72,7 +72,6 @@ def users_routes(app):
         current_user_id = int(get_jwt_identity())
         if current_user_id is None:
             return error_response(401, 'UNAUTHORIZED', 'No authentication token or invalid token')
-
         user = User.query.get(current_user_id)
         if not user:
             return error_response(404, 'USER_NOT_FOUND', 'User ID does not exist')
@@ -185,7 +184,7 @@ def users_routes(app):
                   example: new@example.com
                 password:
                   type: string
-                  example: 1234
+                  example: newpassword
         responses:
           200:
             description: User information successfully updated
@@ -242,7 +241,6 @@ def users_routes(app):
         - name: user_id
           in: path
           required: true
-          description: Id of the user to promote
         responses:
           200:
             description: User promoted to admin successfully
