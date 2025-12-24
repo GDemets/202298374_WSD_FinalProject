@@ -69,7 +69,7 @@ def users_routes(app):
                     message:
                     type: string
         """
-        current_user_id = get_jwt_identity()
+        current_user_id = int(get_jwt_identity())
         if current_user_id is None:
             return error_response(401, 'UNAUTHORIZED', 'No authentication token or invalid token')
 
